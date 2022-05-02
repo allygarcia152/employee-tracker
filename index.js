@@ -72,19 +72,9 @@ async function viewRoles() {
 
 async function viewEmployees() {
   db.query(
-    `SELECT 
-    E.id, 
-    E.first_name, 
-    E.last_name, 
-    R.title, 
-    R.salary, 
-    D.name AS department,
-    CONCAT(M.first_name,' ', M.last_name) AS manager
-    FROM employee E
-    JOIN role R ON E.role_id = R.id,
-    JOIN department D ON R.department_id = D.id
-    LEFT JOIN employee M ON E.manager_id = M.id;
-    `,
+    `SELECT employee.*, role.title AS job_title, role.salary AS salary FROM employee 
+    JOIN role 
+    ON employee.role_id = role.id`,
     (err, results) => {
       if (err) {
         console.log(err);
@@ -197,12 +187,12 @@ async function addEmployee() {
       {
         type: 'input',
         name: 'firstName',
-        message: 'Please enter the title of the role you would like to add.',
+        message: 'Please enter the first name of the employee you would like to add.',
       },
       {
         type: 'input',
         name: 'lastName',
-        message: 'Please enter the salary for this role.',
+        message: 'Please enter the last name of the employee you would like to add.',
       },
       {
         type: 'list',
@@ -236,6 +226,62 @@ async function addEmployee() {
     });
 
   });
-}
+};
+
+async function updateRole() {
+  console.log("Please take note of the id number of the role that you would like to assign to the employee as well as the id of the employee. Thank you.");
+  db.query(
+    `SELECT employee.id, employee.first_name, employee.last_name, employee.role_id, role.title AS role_title FROM employee 
+    JOIN role 
+    ON employee.role_id = role.id`,
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      console.table(results);
+    }
+  );
+  db.query(`SELECT * FROM employee;`, (err, results) => {
+    let employeeArr = [];
+    if (err) {
+      console.log(err);
+    }
+    for (let i = 0; i < results.length; i++) {
+      employeeArr.push({ first_name: results[i].first_name, last_name: results[i].last_name, role_id: results[i].role_id, manager_id: results[i].manager_id, value: results[i].id });
+    }
+
+    inquirer.prompt([
+      {
+        type: 'list',
+        name: 'employeeName',
+        message: 'Please choose which employee you would like to update.',
+        choices: employeeArr,
+      },
+      {
+        type: 'number',
+        name: 'newRole',
+        message: 'Please enter id number of the new role for this employee.',
+      },
+    ])
+      .then((data) => {
+        db.query(
+          `UPDATE employee
+          SET role_id = ? 
+          WHERE id = ?`,
+          [data.newRole, data.employeeName],
+          (err, results) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
+            console.log("This role has been added.");
+            startup();
+          }
+        )
+      });
+  });
+};
+
 
 startup();
