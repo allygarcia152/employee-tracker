@@ -106,7 +106,7 @@ async function addDepartment() {
   ])
     .then((data) => {
       db.query(
-      `INSERT INTO department 
+        `INSERT INTO department 
       (name)
       VALUES
       ('?');`,
@@ -151,24 +151,91 @@ async function addRole() {
         choices: deptArr,
       },
     ])
-    .then((data) => {
-      db.query (
-        `INSERT INTO role 
+      .then((data) => {
+        db.query(
+          `INSERT INTO role 
         (title, salary, department_id)
         VALUES
         (?,?,?);`,
-        [data.roleTitle, data.roleSalary, data.deptId],
+          [data.roleTitle, data.roleSalary, data.deptId],
+          (err, results) => {
+            if (err) {
+              console.log(err);
+              return;
+            }
+            console.log("This role has been added.");
+            startup();
+          }
+        )
+      });
+  });
+};
+
+async function addEmployee() {
+  console.log("Please take note of the id number of the employee that will be the manager of the employee you would like to add to the system. You will need the id number to assign the new employee a manager. Thank you.");
+  db.query(
+    `SELECT * FROM employee;
+    `,
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      console.table(results);
+    }
+  );
+  db.query(`SELECT * FROM role;`, (err, results) => {
+    let roleArr = [];
+    if (err) {
+      console.log(err);
+    }
+    for (let i = 0; i < results.length; i++) {
+      roleArr.push({ title: results[i].title, salary: results[i].salary, department_id: results[i].department_id, value: results[i].id });
+    }
+
+    inquirer.prompt([
+      {
+        type: 'input',
+        name: 'firstName',
+        message: 'Please enter the title of the role you would like to add.',
+      },
+      {
+        type: 'input',
+        name: 'lastName',
+        message: 'Please enter the salary for this role.',
+      },
+      {
+        type: 'list',
+        name: 'roleId',
+        message: 'Please choose which role employee will have.',
+        choices: roleArr,
+      },
+      {
+        type: 'number',
+        name: 'managerId',
+        message: 'Please enter the employee id of the person who will manage this employee.',
+        default: 5
+      }
+    ])
+    .then((data) => {
+      db.query(
+        `INSERT INTO employee 
+      (first_name, last_name, role_id, manager_id)
+      VALUES
+      (?,?,?,?);`,
+        [data.firstName, data.lastName, data.roleId, data.managerId],
         (err, results) => {
           if (err) {
             console.log(err);
             return;
           }
-          console.log("This role has been added.");
+          console.log("This employee has been added.");
           startup();
         }
       )
     });
+
   });
-};
+}
 
 startup();
