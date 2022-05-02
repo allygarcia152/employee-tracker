@@ -15,7 +15,7 @@ In order to use this application, users will need to install npm packaging syste
 ## Usage
 Once 'node index' has been ran in the command line, the user will be asked what they would like to do. The can select to view or add a department, role, or employee, as well as update the role of an employee. Once the use has selected a choice, they will either be presented with the information that they requested, or be asked to provide information for the data they would like to add to the table.
 
-[Click here to see a video of the application being used]()
+[Click here to see a video of the application being used](https://www.awesomescreenshot.com/video/8693330?key=c7f01821b99bf562beee020111df2098)
 
 Repository Link: [Employee Tracker repository](https://github.com/allygarcia152/employee-tracker)
 

@@ -99,7 +99,7 @@ async function addDepartment() {
         `INSERT INTO department 
       (name)
       VALUES
-      ('?');`,
+      (?);`,
         [data.deptName],
         (err, results) => {
           if (err) {
