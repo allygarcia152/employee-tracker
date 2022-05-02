@@ -1,128 +1,174 @@
 //Include inquirer needed for this application
 const inquirer = require('inquirer');
+const db = require('./db/connection');
 
 //Create an array of questions for user input
-const questions = () => {
+const startup = () => {
   return inquirer.prompt([
     {
-      type: 'input',
-      name: 'title',
-      message: 'What is the title of your project? (Required)',
-      validate: titleInput => {
-        if (titleInput) {
-          return true;
-        } else {
-          console.log('Please enter your project title!');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'description',
-      message: 'Provide a short description explaining the what, why, and how of your project. (Required)',
-      validate: descriptionInput => {
-        if (descriptionInput) {
-          return true;
-        } else {
-          console.log('Please enter your project description.');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'installation',
-      message: 'Provide a step-by-step descriptions of of how to install your project. (Required)',
-      validate: installationInput => {
-        if (installationInput) {
-          return true;
-        } else {
-          console.log('Please enter your installation instructions.');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'usage',
-      message: 'Provide instructions and examples for use. (Required)',
-      validate: usageInput => {
-        if (usageInput) {
-          return true;
-        } else {
-          console.log('Please enter your usage instructions.');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'contribution',
-      message: 'Provide a description of what kinds of contributions you are seeking and your guidelines. (Required)',
-      validate: contributionInput => {
-        if (contributionInput) {
-          return true;
-        } else {
-          console.log('Please enter contribution guidelines.');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'tests',
-      message: 'Provide instructions on how to run all tests on your project. (Required)',
-      validate: testInput => {
-        if (testInput) {
-          return true;
-        } else {
-          console.log('Please enter your test instructions.');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'username',
-      message: 'Provide your GitHub username. (Required)',
-      validate: usernameInput => {
-        if (usernameInput) {
-          return true;
-        } else {
-          console.log('Please enter your GitHub username.');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'input',
-      name: 'email',
-      message: 'Provide your email address. (Required)',
-      validate: emailInput => {
-        if (emailInput) {
-          return true;
-        } else {
-          console.log('Please enter your email address.');
-          return false;
-        }
-      }
-    },
-    {
       type: 'list',
-      name: 'license',
-      message: 'Choose a license for this project. (Required)',
-      choices: ['MIT', 'Apache 2.0', 'BSD 3-Clause', 'GNU GPLv3', 'ISC', 'The Unlicense'],
-      validate: licenseInput => {
-        if (licenseInput) {
-          return true;
-        } else {
-          console.log('You did not select a license for this project. The "License" section of your README.md file will be blank.');
-          return false;
-        }
-      }
+      name: 'directory',
+      message: 'What would you like to do?',
+      choices: ['View all departments', 'View all roles', 'View all employees', 'Add a department', 'Add a role', 'Add an employee', 'Update an employee role', 'Exit'],
     },
   ])
+    .then((data) => {
+      console.log(data.directory);
+      switch (data.directory) {
+        case "View all departments":
+          viewDepartments();
+          break;
+        case "View all roles":
+          viewRoles();
+          break;
+        case "View all employees":
+          viewEmployees();
+          break;
+        case "Add a department":
+          addDepartment();
+          break;
+        case "Add a role":
+          addRole();
+          break;
+        case "Add an employee":
+          addEmployee();
+          break;
+        case "Update an employee role":
+          updateRole();
+          break;
+        case "Exit":
+          process.exit();
+      }
+    })
 };
 
-questions ();
+async function viewDepartments() {
+  db.query(`SELECT * FROM department;`, (err, results) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    console.table(results);
+    startup();
+  });
+};
+
+async function viewRoles() {
+  db.query(
+    `SELECT role.*, department.name AS department_id
+    FROM role
+    LEFT JOIN department
+    ON role.department_id = department.id;`,
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      console.table(results);
+      startup();
+    }
+  );
+};
+
+async function viewEmployees() {
+  db.query(
+    `SELECT 
+    E.id, 
+    E.first_name, 
+    E.last_name, 
+    R.title, 
+    R.salary, 
+    D.name AS department,
+    CONCAT(M.first_name,' ', M.last_name) AS manager
+    FROM employee E
+    JOIN role R ON E.role_id = R.id,
+    JOIN department D ON R.department_id = D.id
+    LEFT JOIN employee M ON E.manager_id = M.id;
+    `,
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      console.table(results);
+      startup();
+    }
+  );
+};
+
+async function addDepartment() {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: 'deptName',
+      message: 'Please enter the name of the department you would like to add.',
+    },
+  ])
+    .then((data) => {
+      db.query(
+      `INSERT INTO department 
+      (name)
+      VALUES
+      ('?');`,
+        [data.deptName],
+        (err, results) => {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          console.log("This department has been added. Thank you.");
+          startup();
+        }
+      )
+    })
+};
+
+async function addRole() {
+  db.query(`SELECT * FROM department;`, (err, results) => {
+    let deptArr = [];
+    if (err) {
+      console.log(err);
+    }
+    for (let i = 0; i < results.length; i++) {
+      deptArr.push({ name: results[i].name, value: results[i].id });
+    }
+
+    inquirer.prompt([
+      {
+        type: 'input',
+        name: 'roleTitle',
+        message: 'Please enter the title of the role you would like to add.',
+      },
+      {
+        type: 'input',
+        name: 'roleSalary',
+        message: 'Please enter the salary for this role.',
+      },
+      {
+        type: 'list',
+        name: 'deptId',
+        message: 'Please choose which department this role will belong to.',
+        choices: deptArr,
+      },
+    ])
+    .then((data) => {
+      db.query (
+        `INSERT INTO role 
+        (title, salary, department_id)
+        VALUES
+        (?,?,?);`,
+        [data.roleTitle, data.roleSalary, data.deptId],
+        (err, results) => {
+          if (err) {
+            console.log(err);
+            return;
+          }
+          console.log("This role has been added.");
+          startup();
+        }
+      )
+    });
+  });
+};
+
+startup();
